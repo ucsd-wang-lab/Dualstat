@@ -9,13 +9,17 @@
  *
  * ========================================
 */
-#ifndef AD5647R_H
-#define AD5647R_H
+#ifndef DAC_H
+#define DAC_H
+
+#include "main.h"
     
 #define AD5647R_ADDR    0x0F    //7 bit, 8 bit 0x1E
 
-typedef enum { CH_A, CH_B, CH_BOTH } DAC_Channel_t;
+typedef enum { CH_A, CH_B, CH_BOTH } dacChannel_t;
     
-    
-#endif /* AD5647R_H */ 
+void setDAC(uint16_t val, dacChannel_t ch);
+void enableDAC_ref(void);
+
+#endif /* DAC_H */ 
 /* [] END OF FILE */
