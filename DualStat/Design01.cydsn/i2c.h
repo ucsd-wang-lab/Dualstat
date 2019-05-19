@@ -27,7 +27,7 @@ extern void I2CWriteByte(uint8_t devAddr, uint8_t regAddr, uint8_t value);
 extern uint32 I2CWriteBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_t *value);
 extern void I2CWriteWord(uint8_t devAddr, uint8_t regAddr, uint16_t value);
 extern void I2CWriteWords(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint16_t *value);
-
+extern uint32 I2CWriteCommand(uint8_t devAddr, uint8_t command);
 
 uint8_t buffer[22];
 

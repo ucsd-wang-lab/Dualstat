@@ -39,7 +39,13 @@ void I2CReadBit(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint8_t *value
 	I2CReadByte(devAddr, regAddr, value);
 	*value = *value & (1 << bitNum);
 }
-	
+
+uint32 I2CWriteCommand(uint8_t devAddr, uint8_t command) {
+	I2CM_I2CMasterSendStart(devAddr, I2CM_I2C_WRITE_XFER_MODE, I2C_TIMEOUT_MS);
+	I2CM_I2CMasterWriteByte(command, I2C_TIMEOUT_MS);
+	return I2CM_I2CMasterSendStop(I2C_TIMEOUT_MS);	
+}
+
 uint32 I2CWriteBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_t *value) {
 	uint8_t i=0;
 	I2CM_I2CMasterSendStart(devAddr, I2CM_I2C_WRITE_XFER_MODE, I2C_TIMEOUT_MS);

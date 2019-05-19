@@ -16,10 +16,14 @@
     
 #define AD5647R_ADDR    0x0F    //7 bit, 8 bit 0x1E
 
-typedef enum { CH_A, CH_B, CH_BOTH } dacChannel_t;
+typedef enum {  DAC_CH_A = 0,
+                DAC_CH_B = 1,
+                DAC_CH_BOTH = 7,
+    } dacChannel_t;
+typedef enum { REF_OFF, REF_ON, } dacRef_t;
     
-void setDAC(uint16_t val, dacChannel_t ch);
-void enableDAC_ref(void);
+void setDac(uint16_t val, dacChannel_t ch);
+void setDacRef(dacRef_t status);
 
 #endif /* DAC_H */ 
 /* [] END OF FILE */

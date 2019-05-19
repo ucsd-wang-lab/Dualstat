@@ -13,8 +13,12 @@
 #include "i2c.h"
 #include "dac.h"
 
-void setDAC(uint16_t val, dacChannel_t ch)
+/* DAC is AD5647R*/
+
+void setDac(uint16_t val, dacChannel_t ch)
 {
+    /* VOUT = 2*VREF*(val/(2^14))*/
+    
     /* Command sequence, 3 bytes total
     //  Write Address with R/W = 0
     //  Write Command byte
@@ -34,39 +38,37 @@ void setDAC(uint16_t val, dacChannel_t ch)
     //  Write LSD of data
     */
 
-    uint8_t cmd_byte;//0001 1 A1A2A3
+    uint8_t cmd_byte = 0;//0001 1 A1A2A3
     switch(ch)
     {
-        case CH_A:
+        case DAC_CH_A:
             cmd_byte=0x18;
         break;
-        case CH_B:
+        case DAC_CH_B:
             cmd_byte=0x19;
         break;
-        case CH_BOTH:
+        case DAC_CH_BOTH:
             cmd_byte=0x1F;
         break;
     }
-
+    //Shift data 2 bits up since last 2 bits are unused 
+    val = val << 2;
+    
     uint8_t data[2]; 
     data[0] = (val >> 8);
     data[1] = val & 0xFF;   //TODO: check this, MSB needs to be sent first
-
+    DBG_PRINTF("Set DAC val: 0x%x|0x%x|0x%x\r\n", cmd_byte, data[0], data[1]);
     I2CWriteBytes(AD5647R_ADDR, cmd_byte, 2, data);//regAddr is just the first byte written after device addr, used as cmd byte
 }
 
-void enableDAC_ref(void)
+void setDacRef(dacRef_t status)
 {
-    #define ENABLE_REF      1
-    #define REF_SETUP_CMD   0x38
-    //cmd_byte 0011 1000 -> 0x38
-    uint16_t val = ENABLE_REF;   //enables DAC ref, 0 disables
+    #define REF_SETUP_CMD   0x38 //cmd: 0011 1000 -> 0x38
     uint8_t cmd_byte = REF_SETUP_CMD;    //reference setup command
-    
     uint8_t data[2]; 
     data[0] = 0;
-    data[1] = val & 0xFF;   //TODO: check this, MSB needs to be sent first
-
+    data[1] = status & 0xFF;   //TODO: check this, MSB needs to be sent first
+    DBG_PRINTF("Set DAC Ref: 0x%x|0x%x|0x%x\r\n", cmd_byte, data[0], data[1]);
     I2CWriteBytes(AD5647R_ADDR, cmd_byte, 2, data);//regAddr is just the first byte written after device addr, used as cmd byte
 }
 

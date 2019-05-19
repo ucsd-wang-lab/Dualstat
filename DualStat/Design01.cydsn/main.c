@@ -81,10 +81,14 @@ uint16_t temp_cnt = 0;
 int main (void)
 {
     CyGlobalIntEnable;   /* Enable global interrupts */
+    
     DBG_UART_Start();
+    I2CM_Start();
+    tickStart();
+    Opamp_1_Start();
+    
     DBG_PRINTF("\r\n\r\nTEST> %s: FW Version %d.%d.%d Built: %s, %s\n\r", PROJECT_NAME, FV_MAJOR, FV_MINOR, FV_POINT, COMPILE_TIME, FIRMWARE_DATE);
     /* Place your initialization/startup code here (e.g. MyInst_Start()) */
-    tickStart();
     
     #if (SERIAL_CTRL == DISABLED)
         CyBle_Start( StackEventHandler );

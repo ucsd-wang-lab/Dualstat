@@ -13,17 +13,19 @@
 #define SERIAL_CTRL_H
     
 #define RxBufferSize	128     //size of the Rx circular buffer
-//#define EOM_char        0x0D    //message separator char (\r)
-//#define EOM_char        0x0A    //message separator char (\n)
 
 //any standard terminator (or their combination) will work
 #define EOM_CR        0x0D    //message separator char (\r)
 #define EOM_LF        0x0A    //message separator char (\n)
 
 //define input commands-> 
-#define cmd_V  'V' //read value for Rev
-#define cmd_R  'R' //Red Led: 0 = OFF, 1 = ON
-//#define cmd_M  'M' //Write MAC
+#define cmd_V   'V' //read value for Rev
+#define cmd_L   'L' //Red Led_2: 0 = OFF, 1 = ON
+#define cmd_R   'R' //DAC Reference: 0 = OFF, 1 = ON
+#define cmd_S   'S' //set DAC output
+#define cmd_G   'G' //get ADC
+#define cmd_A   'A' //ampero test
+
 
 
 //ascii to hex conversions
