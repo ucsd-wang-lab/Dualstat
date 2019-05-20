@@ -14,8 +14,16 @@
 #include "dac.h"
 
 /* DAC is AD5647R*/
+#define DAC_LVLS    16384
 
-void setDac(uint16_t val, dacChannel_t ch)
+uint16_t dacVolts2Code(uint16_t mVolts);
+
+uint16_t dacVolts2Code(uint16_t mVolts)
+{
+    return (mVolts * DAC_LVLS)/(2*DAC_REF);
+}
+
+void dacSet(uint16_t mVolts, dacChannel_t ch)
 {
     /* VOUT = 2*VREF*(val/(2^14))*/
     
@@ -51,23 +59,24 @@ void setDac(uint16_t val, dacChannel_t ch)
             cmd_byte=0x1F;
         break;
     }
-    //Shift data 2 bits up since last 2 bits are unused 
-    val = val << 2;
     
+    uint16_t val = dacVolts2Code(mVolts);   //convert to code
+    //DBG_PRINTF("Set DAC Volts: %d\tCode: 0x%x\r\n", mVolts, val);
+    val = val << 2; //Shift data 2 bits up since last 2 bits are unused
     uint8_t data[2]; 
     data[0] = (val >> 8);
-    data[1] = val & 0xFF;   //TODO: check this, MSB needs to be sent first
-    DBG_PRINTF("Set DAC val: 0x%x|0x%x|0x%x\r\n", cmd_byte, data[0], data[1]);
+    data[1] = val & 0xFF;
+    //DBG_PRINTF("Set DAC val: 0x%x|0x%x|0x%x\r\n", cmd_byte, data[0], data[1]);
     I2CWriteBytes(AD5647R_ADDR, cmd_byte, 2, data);//regAddr is just the first byte written after device addr, used as cmd byte
 }
 
-void setDacRef(dacRef_t status)
+void dacSetRef(dacRef_t status)
 {
     #define REF_SETUP_CMD   0x38 //cmd: 0011 1000 -> 0x38
     uint8_t cmd_byte = REF_SETUP_CMD;    //reference setup command
     uint8_t data[2]; 
     data[0] = 0;
-    data[1] = status & 0xFF;   //TODO: check this, MSB needs to be sent first
+    data[1] = status & 0xFF;
     DBG_PRINTF("Set DAC Ref: 0x%x|0x%x|0x%x\r\n", cmd_byte, data[0], data[1]);
     I2CWriteBytes(AD5647R_ADDR, cmd_byte, 2, data);//regAddr is just the first byte written after device addr, used as cmd byte
 }

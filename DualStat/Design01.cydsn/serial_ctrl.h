@@ -25,7 +25,8 @@
 #define cmd_S   'S' //set DAC output
 #define cmd_G   'G' //get ADC
 #define cmd_A   'A' //ampero test
-
+#define cmd_C   'C' //print hardware config
+#define cmd_O   'O' //offset cal
 
 
 //ascii to hex conversions
