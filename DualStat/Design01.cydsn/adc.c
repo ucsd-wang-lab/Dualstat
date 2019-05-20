@@ -188,21 +188,24 @@ uint8_t gainCode2Val(adcGainCode_t code)
     return val;   
 }
 
+
 uint16_t refCode2Val(adcRefCode_t code)
 {
+    #define ADC_INTERN_REF  2048
+    #define SYS_VDD         3300
     // Maps the refernce register code to the actual reference that is used. 
     // Ex. Code(0) -> Ref(2048mV)
     uint16_t val = 0;
     switch (code)
     {
         case ADC_REF_INTERN:
-            val = 2048;
+            val = ADC_INTERN_REF;
         break;
         case ADC_REF_EXTERN:
             val = DAC_REF;
         break;
         case ADC_REF_VDD:
-            val = 3300;
+            val = SYS_VDD;
         break;
     }
     return val;

@@ -155,7 +155,7 @@ void processCommandMsg(void)
     {
         //Echo
         DBG_PRINTF("S");
-        uint8_t len = sizeof(RB.valstr)/sizeof(char);
+        uint8_t len = 5;
         for(uint8_t i=0; i < len; i++)
         {
             if (RB.valstr[i] == 0)
@@ -211,7 +211,7 @@ void processCommandMsg(void)
                 data = adcReadData();
                 DBG_PRINTF("TEST> ADC_CHA\r\n\tCode: 0x%x\r\n\tmVolts: ", data);
                 printSignedMVolts(adcCode2Volts(data));
-                DBG_PRINTF(" mV/r/n");
+                DBG_PRINTF(" mV\r\n");
             break;
             case ASCII_B:
                 adcConfigChanGain(ADC_CH_B, ADC_G1, PGA_DIS);
@@ -222,7 +222,7 @@ void processCommandMsg(void)
                 data = adcReadData();
                 DBG_PRINTF("TEST> ADC_CHB\r\n\tCode: 0x%x\r\n\tmVolts: ", data);
                 printSignedMVolts(adcCode2Volts(data));
-                DBG_PRINTF(" mV/r/n");
+                DBG_PRINTF(" mV\r\n");
             break;
             case ASCII_0:
                 adcPwrDown();
@@ -237,9 +237,7 @@ void processCommandMsg(void)
     else if (RB.cmd == cmd_A)
     {
         DBG_PRINTF("A");
-        dacSetRef(REF_ON); //turn on the 1.25V reference
-        adcReset();
-        uint8_t len = sizeof(RB.valstr)/sizeof(char);
+        uint8_t len = 5;
         for(uint8_t i=0; i < len; i++)
         {
             if (RB.valstr[i] == 0)
@@ -250,23 +248,20 @@ void processCommandMsg(void)
             DBG_PRINTF("%c", RB.valstr[i]);
         }
         DBG_PRINTF("\r\n");
-        /* Parse DAC command data First nibble is channel, next 2 bytes are the value (voltage)*/
-        //TODO: Make this less confusing...
-        uint8_t dacVal[4];
+        /* Parse DAC command data First nibble is channel, next 2 bytes are the value (voltage)*/       
         char ch = (RB.valstr[0]);  //channel
         //DBG_PRINTF("DAC CH: %c\r\n", ch);
-        for (uint8_t i=1; i < len; i+=2)    //skip first nibble since that is the channel, N.B. i+=2
+        uint16_t val = 0;
+        for (uint8_t i=1; i < len; i++)    //skip first nibble since that is the channel, N.B. i+=2
         { 
-            if (isxdigit(RB.valstr[i]) && isxdigit(RB.valstr[i+1]))
+            if (isdigit(RB.valstr[i]))
             {
-                uint8 loNib = atoh(RB.valstr[i]);
-                uint8 hiNib = atoh(RB.valstr[i+1]);
-                dacVal[i] = (loNib << 4) | hiNib;
-                //DBG_PRINTF("HEX BYTE: %x\r\n", dacVal[i]);
+                val = 10 * val + RB.valstr[i] - '0';
             }
         }
-        uint16_t val = ((uint16_t)dacVal[1] << 8) | dacVal[3];  //i is +=2, starts at 1
-        DBG_PRINTF("TEST> DAC Write: %d\r\n", val);
+        DBG_PRINTF("TEST> AMPERO - POT[%c]: %d mV\r\n", ch, val);
+        dacSetRef(REF_ON); //turn on the 1.25V reference
+        adcReset();
         switch (ch)
         {
             case ASCII_A:
