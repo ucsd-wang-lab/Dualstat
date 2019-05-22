@@ -18,9 +18,6 @@
 #define TRUE            (1u)
 #define FALSE           (0u)
 
-#define LED_OFF         (0u)
-#define LED_ON          (1u) 
-
 #define GPIO_LOW        (0u)
 #define GPIO_HIGH       (1u)
 
@@ -33,6 +30,7 @@
 #define FV_POINT            1
 #define FIRMWARE_DATE       __DATE__
 #define COMPILE_TIME        __TIME__
+
     
 
 /* Options */    
@@ -49,5 +47,8 @@
     #define DBG_WAIT    
 #endif
     
+void setSysHibernateFlag(uint8_t flag);
+uint8_t getSysHibernateFlag(void);
+
 #endif
 /* [] END OF FILE */

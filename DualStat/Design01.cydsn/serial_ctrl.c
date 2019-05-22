@@ -121,12 +121,12 @@ void processCommandMsg(void)
         if (PB.L == ASCII_0)
         {
             DBG_PRINTF("L0\n\rTEST>  Red LED OFF\r\n");//echo command   
-            LED_2_Write(LED_OFF);
+            LED_2_Write(GPIO_LOW);
         }
         else if (PB.L == ASCII_1)
         {
             DBG_PRINTF("L1\n\rTEST>  Red LED ON\r\n");//echo command
-            LED_2_Write(LED_ON);
+            LED_2_Write(GPIO_HIGH);
         }
         else 
         {
@@ -139,12 +139,17 @@ void processCommandMsg(void)
         if (PB.R == ASCII_0)
         {
             DBG_PRINTF("R0\n\rTEST>  Reference OFF\r\n");//echo command   
-            dacSetRef(REF_OFF); //turn on the 1.25V reference
+            dacSetRef(REF_OFF); //turn off the 1.25V reference
         }
         else if (PB.R == ASCII_1)
         {
             DBG_PRINTF("R1\n\rTEST>  Reference ON\r\n");//echo command
             dacSetRef(REF_ON); //turn on the 1.25V reference
+            CyDelay(10);
+            INTERNAL_ADC_StartConvert();
+            INTERNAL_ADC_IsEndConversion(INTERNAL_ADC_WAIT_FOR_RESULT);
+            uint16_t mVoltRef = INTERNAL_ADC_CountsTo_mVolts(ADC_CH0, INTERNAL_ADC_GetResult16(ADC_CH0));
+            DBG_PRINTF("TEST>  Ref : %d mV\r\n", mVoltRef);//echo command
         }
         else 
         {
@@ -212,6 +217,7 @@ void processCommandMsg(void)
                 DBG_PRINTF("TEST> ADC_CHA\r\n\tCode: 0x%x\r\n\tmVolts: ", data);
                 printSignedMVolts(adcCode2Volts(data));
                 DBG_PRINTF(" mV\r\n");
+                
             break;
             case ASCII_B:
                 adcConfigChanGain(ADC_CH_B, ADC_G1, PGA_DIS);
@@ -283,9 +289,12 @@ void processCommandMsg(void)
         for (uint8_t i=0;i<100;i++)
         {
             adcStartConv();
+            INTERNAL_ADC_StartConvert();
             CyDelay(100);
             printSignedMVolts(adcCode2Volts(adcReadData()));
-            DBG_PRINTF("\r\n");
+            INTERNAL_ADC_IsEndConversion(INTERNAL_ADC_WAIT_FOR_RESULT);
+            uint16_t mVoltRef = INTERNAL_ADC_CountsTo_mVolts(ADC_CH0, INTERNAL_ADC_GetResult16(ADC_CH0));
+            DBG_PRINTF("\t%d\r\n", mVoltRef);          
         }
         DBG_PRINTF("TEST>  Ampero test complete!\r\n"); 
     }

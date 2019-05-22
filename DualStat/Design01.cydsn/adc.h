@@ -12,7 +12,14 @@
 #ifndef ADC_H
 #define ADC_H
 #include "main.h"
+  
     
+/* Start PSoC Internal ADC, 12 bit SAR */
+#define ADC_CH0  0
+/* End internal ADC*/
+    
+    
+/* Start External ADC, AS122C04 24 bit*/
 #define ADS122C04_ADDR  0x40    //7-bit 100 0000
 
 /* Register codes i.e. what is written to the registers*/
