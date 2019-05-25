@@ -89,6 +89,7 @@ int main (void)
     I2CM_Start();
     tickStart();
     Opamp_1_Start();
+    
     INTERNAL_ADC_Start();
     
     //LED_1_Write(GPIO_HIGH);

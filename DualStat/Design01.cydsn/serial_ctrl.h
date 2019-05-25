@@ -45,7 +45,8 @@
 #define ASCII_C     67  //ascii code for C
 #define ASCII_D     68  //ascii code for D
 #define ASCII_E     69  //ascii code for E
-#define ASCII_F     70  //ascii code for F    
+#define ASCII_F     70  //ascii code for F
+#define ASCII_MINUS 0x2D    //ascii code for -
 
 #define MAC_LENGTH  12  //length of mac address in hex characters    
     

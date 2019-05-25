@@ -131,11 +131,12 @@ void processCommandMsg(void)
         else 
         {
             DBG_PRINTF("TEST> Red LED command value '%c' not recognized. Valid values are 0 and 1.\r\n", RB.valstr[0]);//echo command and value       
-        }        
+        }
     } 
     else if (RB.cmd == cmd_R)//command 'R' received..
     {
         PB.R = RB.valstr[0];
+        adcPwrDown(); //TODO: remove, used for testing
         if (PB.R == ASCII_0)
         {
             DBG_PRINTF("R0\n\rTEST>  Reference OFF\r\n");//echo command   
@@ -160,7 +161,7 @@ void processCommandMsg(void)
     {
         //Echo
         DBG_PRINTF("S");
-        uint8_t len = 5;
+        uint8_t len = 6;
         for(uint8_t i=0; i < len; i++)
         {
             if (RB.valstr[i] == 0)
@@ -175,24 +176,29 @@ void processCommandMsg(void)
         char ch = (RB.valstr[0]);  //channel
         //DBG_PRINTF("DAC CH: %c\r\n", ch);
         uint16_t val = 0;
+        uint8_t posFlag = TRUE;
         for (uint8_t i=1; i < len; i++)    //skip first nibble since that is the channel, N.B. i+=2
         { 
             if (isdigit(RB.valstr[i]))
             {
                 val = 10 * val + RB.valstr[i] - '0';
             }
+            else if (RB.valstr[i] == ASCII_MINUS)
+            {
+                posFlag = FALSE;
+            }
         }
-        DBG_PRINTF("TEST> Set DAC[%c]: %d mV\r\n", ch, val);
+        (posFlag == TRUE) ? (DBG_PRINTF("TEST> Set DAC[%c]: %d mV\r\n", ch, val)) : (DBG_PRINTF("TEST> Set DAC[%c]: -%d mV\r\n", ch, val));
         switch (ch)
         {
             case ASCII_A:
-                dacSet(val, DAC_CH_A);
+                dacSet(val, DAC_CH_A, posFlag);
             break;
             case ASCII_B:
-                dacSet(val, DAC_CH_B);
+                dacSet(val, DAC_CH_B, posFlag);
             break;
             case ASCII_F:
-                dacSet(val, DAC_CH_BOTH);
+                dacSet(val, DAC_CH_BOTH, posFlag);
             break;
             default:
             DBG_PRINTF("TEST>  Error! Bad DAC channel.\r\n"); 
@@ -258,12 +264,18 @@ void processCommandMsg(void)
         char ch = (RB.valstr[0]);  //channel
         //DBG_PRINTF("DAC CH: %c\r\n", ch);
         uint16_t val = 0;
+        uint8_t posFlag = TRUE;
         for (uint8_t i=1; i < len; i++)    //skip first nibble since that is the channel, N.B. i+=2
         { 
             if (isdigit(RB.valstr[i]))
             {
                 val = 10 * val + RB.valstr[i] - '0';
             }
+            else if (RB.valstr[i] == ASCII_MINUS)
+            {
+                posFlag = FALSE;
+            }
+            
         }
         DBG_PRINTF("TEST> AMPERO - POT[%c]: %d mV\r\n", ch, val);
         dacSetRef(REF_ON); //turn on the 1.25V reference
@@ -271,15 +283,15 @@ void processCommandMsg(void)
         switch (ch)
         {
             case ASCII_A:
-                dacSet(val, DAC_CH_A);
+                dacSet(val, DAC_CH_A, posFlag);
                 adcConfigChanGain(ADC_CH_A, ADC_G1, PGA_DIS);
             break;
             case ASCII_B:
-                dacSet(val, DAC_CH_B);
+                dacSet(val, DAC_CH_B, posFlag);
                 adcConfigChanGain(ADC_CH_B, ADC_G1, PGA_DIS);
             break;
             case ASCII_F:
-                dacSet(val, DAC_CH_BOTH);
+                dacSet(val, DAC_CH_BOTH, posFlag);
             break;
             default:
             DBG_PRINTF("TEST>  Error! Bad channel.\r\n"); 

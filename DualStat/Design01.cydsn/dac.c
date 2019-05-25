@@ -15,23 +15,31 @@
 
 /* DAC is AD5647R*/
 #define DAC_LVLS        16384   //2^14
-#define DAC_HALF_LVLS   8192    //2^12/2
+#define DAC_SHIFT       9214    //1.406v -> dac code
 
-uint16_t dacVolts2Code(uint16_t mVolts);
+uint16_t dacVolts2Code(uint16_t mVolts, uint8_t posNum);
 
-uint16_t dacVolts2Code(uint16_t mVolts)
+uint16_t dacVolts2Code(uint16_t mVolts, uint8_t posNum)
 {
     uint16_t code = 0;
-    code = (mVolts * DAC_LVLS)/(2*DAC_REF);// + DAC_HALF_LVLS;
+    //DBG_PRINTF("DAC mV: %d\r\n", mVolts);
+    if (posNum == TRUE)
+    {
+        code = (mVolts * DAC_LVLS)/(2*DAC_REF) + DAC_SHIFT;
+    }
+    else
+    {
+        code = DAC_SHIFT - (mVolts * DAC_LVLS)/(2*DAC_REF);
+    }
     if (code > DAC_LVLS)
     {
-        DBG_PRINTF("ERROR! DAC out of range.\r\n");
+        DBG_PRINTF("ERROR! DAC out of range. Code: %d\r\n", code);
         code = 0;
     }
     return code;
 }
 
-void dacSet(uint16_t mVolts, dacChannel_t ch)
+void dacSet(uint16_t mVolts, dacChannel_t ch, uint8_t posNum)
 {
     /* VOUT = 2*VREF*(val/(2^14))*/
     
@@ -68,13 +76,13 @@ void dacSet(uint16_t mVolts, dacChannel_t ch)
         break;
     }
     
-    uint16_t val = dacVolts2Code(mVolts);   //convert to code
+    uint16_t val = dacVolts2Code(mVolts, posNum);   //convert to code
     //DBG_PRINTF("Set DAC Volts: %d\tCode: 0x%x\r\n", mVolts, val);
     val = val << 2; //Shift data 2 bits up since last 2 bits are unused
     uint8_t data[2]; 
     data[0] = (val >> 8);
     data[1] = val & 0xFF;
-    DBG_PRINTF("Set DAC val: 0x%x|0x%x|0x%x\r\n", cmd_byte, data[0], data[1]);
+    //DBG_PRINTF("Set DAC val: 0x%x|0x%x|0x%x\r\n", cmd_byte, data[0], data[1]);
     I2CWriteBytes(AD5647R_ADDR, cmd_byte, 2, data);//regAddr is just the first byte written after device addr, used as cmd byte
 }
 

@@ -24,7 +24,7 @@ typedef enum {  DAC_CH_A = 0,
     } dacChannel_t;
 typedef enum { REF_OFF, REF_ON, } dacRef_t;
     
-void dacSet(uint16_t mVolts, dacChannel_t ch);
+void dacSet(uint16_t mVolts, dacChannel_t ch, uint8_t posNum);
 void dacSetRef(dacRef_t status);
 
 #endif /* DAC_H */ 
