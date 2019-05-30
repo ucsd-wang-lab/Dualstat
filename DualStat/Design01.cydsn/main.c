@@ -14,6 +14,9 @@
 #include "serial_ctrl.h"
 #include "bleHandler.h"
 
+#include "dac.h"
+#include "adc.h"
+
 /*Function declarations */
 void StackEventHandler( uint32 eventCode, void *eventParam );
 uint32_t getTick(void);
@@ -101,6 +104,15 @@ int main (void)
     #else
         startSerialCtrlInt();
     #endif
+    
+    
+    DBG_PRINTF("TEST>  Reference ON\r\n");//echo command
+    dacSetRef(REF_ON); //turn on the 1.25V reference
+    CyDelay(10);
+    INTERNAL_ADC_StartConvert();
+    INTERNAL_ADC_IsEndConversion(INTERNAL_ADC_WAIT_FOR_RESULT);
+    uint16_t mVoltRef = INTERNAL_ADC_CountsTo_mVolts(ADC_CH0, INTERNAL_ADC_GetResult16(ADC_CH0));
+    DBG_PRINTF("TEST>  Ref : %d mV\r\n", mVoltRef);//echo command
     
     for(;;)
     {
