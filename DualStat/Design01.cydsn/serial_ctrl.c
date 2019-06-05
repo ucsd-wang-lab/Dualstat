@@ -263,8 +263,6 @@ void processCommandMsg(void)
         /* Parse DAC command data First nibble is channel, next 2 bytes are the value (voltage)*/       
         char ch = (RB.valstr[0]);  //channel
         //DBG_PRINTF("DAC CH: %c\r\n", ch);
-        onAmperoCfg_t aConfig;
-        aConfig.posNum = TRUE;
         uint16_t val = 0;
         uint8_t posFlag = TRUE;
         for (uint8_t i=1; i < len; i++)    //skip first nibble since that is the channel, N.B. i+=2
@@ -275,25 +273,57 @@ void processCommandMsg(void)
             }
             else if (RB.valstr[i] == ASCII_MINUS)
             {
-                aConfig.posNum = FALSE;
+                posFlag = FALSE;
             }
             
         }
         DBG_PRINTF("TEST> AMPERO - POT[%c]: %d mV\r\n", ch, val);
-        aConfig.potential = val;
-        
+        dacSetRef(REF_ON); //turn on the 1.25V reference
+        adcReset();
         switch (ch)
         {
             case ASCII_A:
-                aConfig.channel = ON_CH_A;
-                amperoExperiment(aConfig);
+                dacSet(val, DAC_CH_A, posFlag);
+                adcConfigChanGain(ADC_CH_A, ADC_G1, PGA_DIS);
             break;
             case ASCII_B:
-                aConfig.channel = ON_CH_B;
-                amperoExperiment(aConfig);
+                dacSet(val, DAC_CH_B, posFlag);
+                adcConfigChanGain(ADC_CH_B, ADC_G1, PGA_DIS);
+            break;
+            case ASCII_F:
+                dacSet(val, DAC_CH_BOTH, posFlag);
             break;
             default:
-            DBG_PRINTF("TEST>  Error! Bad ampero channel.\r\n"); 
+            DBG_PRINTF("TEST>  Error! Bad channel.\r\n"); 
+            break;
+        }
+        CyDelay(1000);  //delay for voltage to stabilize
+        for (uint16_t i=0;i<1200;i++)
+        {
+            adcStartConv();
+            INTERNAL_ADC_StartConvert();
+            CyDelay(100);
+            printSignedMVolts(adcCode2Volts(adcReadData()));
+            INTERNAL_ADC_IsEndConversion(INTERNAL_ADC_WAIT_FOR_RESULT);
+            uint16_t mVoltRef = INTERNAL_ADC_CountsTo_mVolts(ADC_CH0, INTERNAL_ADC_GetResult16(ADC_CH0));
+            DBG_PRINTF("\t%d\r\n", mVoltRef);          
+        }
+        DBG_PRINTF("TEST>  Ampero test complete!\r\n"); 
+        switch (ch) //RETURN TO 0V, 100 accounts for offset
+        {
+            case ASCII_A:
+                dacSet(300, DAC_CH_A, FALSE);
+                adcConfigChanGain(ADC_CH_A, ADC_G1, PGA_DIS);
+            break;
+            case ASCII_B:
+                dacSet(300, DAC_CH_B, FALSE);
+                adcConfigChanGain(ADC_CH_B, ADC_G1, PGA_DIS);
+            break;
+            case ASCII_F:
+                dacSet(val, DAC_CH_BOTH, posFlag);
+            break;
+            default:
+            DBG_PRINTF("TEST>  Error! Bad channel.\r\n"); 
             break;
         }
     }
