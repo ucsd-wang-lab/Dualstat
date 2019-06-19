@@ -14,9 +14,7 @@
 #include "on.h"
 #include "adc.h"
 #include "dac.h"
-
-
-
+#include "bleHandler.h"
 
 typedef enum {  AMP_INIT_S, AMP_TRIGGER_S, AMP_WAIT_FOR_DATA_S, AMP_WAIT_FOR_TIME_S, AMP_STOP_S} amperoState_t;    
 uint8_t adcDRDY = FALSE;
@@ -24,6 +22,7 @@ amperoState_t aState = AMP_STOP_S;
 onAmperoCfg_t amperoCfg;
 uint32_t ampTickCnt = 0;
 uint32_t ampTicksPerSample = 0;
+uint32_t liveCnt = 0;
 
 CY_ISR_PROTO(adcISR); // use to process Rx interrupt
 
@@ -101,20 +100,17 @@ void amperoExperimentStart(onAmperoCfg_t cfg)
     amperoCfg.posNum = cfg.posNum;
     amperoCfg.potential = cfg.potential;
     amperoCfg.sampleCnt = cfg.sampleCnt;
-    amperoCfg.sampleRate = cfg.sampleRate;
-    adc_int_StartEx(adcISR);    //start interrupt
-}
-
-void amperoExperiment(onAmperoCfg_t cfg)
-{
+    liveCnt = 0;    //reset counter to hold number of samples taken
+    amperoCfg.sampleRate = cfg.sampleRate; //in ms
+    
     dacChannel_t dacChan;
     adcChannelCode_t adcChan;
-    if (cfg.channel == ON_CH_A)
+    if (amperoCfg.channel == ON_CH_A)
     {
         dacChan = DAC_CH_A;
         adcChan = ADC_CH_A;
     }
-    else if (cfg.channel == ON_CH_B)
+    else if (amperoCfg.channel == ON_CH_B)
     {
         dacChan = DAC_CH_B;
         adcChan = ADC_CH_B;
@@ -129,26 +125,25 @@ void amperoExperiment(onAmperoCfg_t cfg)
     adcReset();
     adcConfigRateRef(SPS20,TRBO_DIS, ADC_SINGLE_CONV, ADC_REF_INTERN);
     adcConfigChanGain(adcChan, ADC_G1, PGA_DIS);
-    dacSet(cfg.potential, DAC_CH_A, cfg.posNum);
+    dacSet(amperoCfg.potential, DAC_CH_A, amperoCfg.posNum);
     
-    for (uint8_t i=0;i<100;i++)
+    adc_int_StartEx(adcISR);    //start interrupt
+}
+
+void amperoExperiment(void)
+{
+    if (liveCnt >= amperoCfg.sampleCnt)
     {
-        adcStartConv();
-        INTERNAL_ADC_StartConvert();
-        CyDelay(100);
-        
-        printSignedMVolts(adcCode2Volts(adcReadData()));
-        INTERNAL_ADC_IsEndConversion(INTERNAL_ADC_WAIT_FOR_RESULT);
-        uint16_t mVoltRef = INTERNAL_ADC_CountsTo_mVolts(ADC_CH0, INTERNAL_ADC_GetResult16(ADC_CH0));
-        DBG_PRINTF("\t%d\r\n", mVoltRef);          
+        //Experiment is over
+        aState = AMP_STOP_S;
+        //TODO: turn things off
     }
-    
     switch (aState)
     {
         case AMP_INIT_S:
         {
             ampTickCnt = 0;
-            ampTicksPerSample = 100;
+            ampTicksPerSample = amperoCfg.sampleRate;
         }
         case AMP_TRIGGER_S:
         {
@@ -163,19 +158,23 @@ void amperoExperiment(onAmperoCfg_t cfg)
             if (adcDRDY == TRUE)
             {
                 adcDRDY = FALSE;
-                printSignedMVolts(adcCode2Volts(adcReadData()));
+                int32 tmpData = adcReadData();
+                dataNotify(tmpData);
+                printSignedMVolts(adcCode2Volts(tmpData));
                 INTERNAL_ADC_IsEndConversion(INTERNAL_ADC_WAIT_FOR_RESULT); //TODO: Make this non-blocking
                 uint16_t mVoltRef = INTERNAL_ADC_CountsTo_mVolts(ADC_CH0, INTERNAL_ADC_GetResult16(ADC_CH0));
                 DBG_PRINTF("\t%d\r\n", mVoltRef);   
                 (ampTickCnt >= ampTicksPerSample) ? (aState = AMP_TRIGGER_S) : (aState = AMP_WAIT_FOR_TIME_S);
+                liveCnt++;
             }
             break;
         }
         case AMP_WAIT_FOR_TIME_S:
         {
-            if (++ampTickCnt >= ampTicksPerSample)
+            if (++ampTickCnt >= amperoCfg.sampleRate)
             {
                 aState = AMP_TRIGGER_S;
+                ampTickCnt = 0;
             }
             break;
         }        
@@ -185,7 +184,7 @@ void amperoExperiment(onAmperoCfg_t cfg)
         }
     }
     
-    DBG_PRINTF("TEST>  Ampero test complete!\r\n"); 
+    DBG_PRINTF("Ampero test complete!\r\n"); 
 }
 
 

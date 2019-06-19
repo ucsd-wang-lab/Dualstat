@@ -35,6 +35,8 @@ enum {
 };
 
 /*Getters/Setters for BLE data*/
+void dataNotify(int32 data);
+
 
 uint8_t getBleHibernateFlag(void);
 void setBleHibernateFlag(uint8_t flag);

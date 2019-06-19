@@ -45,7 +45,7 @@ int32_t adcCode2Volts(int32_t code)
             N.B. Can still get negative codes due to offset
     */
     #define ADC_LVLS   (16777216)    //2^24
-    //TODO: Remove floats for speed
+    //TODO: Remove floats for speed/code size
     float lsb = (float)((2*adcConfig.ref.val)/adcConfig.gain.val)/ADC_LVLS;
     float  mVolts = code*lsb;
     //printSignedMVolts(mVolts);

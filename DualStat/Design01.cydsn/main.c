@@ -16,6 +16,7 @@
 
 #include "dac.h"
 #include "adc.h"
+#include "on.h"
 
 /*Function declarations */
 void StackEventHandler( uint32 eventCode, void *eventParam );
@@ -129,6 +130,7 @@ int main (void)
                 temp_cnt = 0;
                 (LED_1_Read() == GPIO_HIGH) ? LED_1_Write(GPIO_LOW) : LED_1_Write(GPIO_HIGH);
             }
+            amperoExperiment(); //state machine for ampero
             resetTick();
         }
         sysManagePower();

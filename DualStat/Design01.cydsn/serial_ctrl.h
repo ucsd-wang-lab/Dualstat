@@ -27,6 +27,7 @@
 #define cmd_A   'A' //ampero test
 #define cmd_C   'C' //print hardware config
 #define cmd_O   'O' //offset cal
+#define cmd_p   'P' //TODO: pot en/disable
 
 
 //ascii to hex conversions

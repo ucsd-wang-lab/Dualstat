@@ -10,7 +10,7 @@ void bleStartAdvertising(void);
 CYBLE_API_RESULT_T apiResult;
 uint8_t bleHibernateFlag = FALSE; 
 uint8_t mcuHibernateFlag = FALSE;
-
+uint8 startDataNotification;
 uint8 deviceConnected = FALSE;
 
 CYBLE_GAP_CONN_UPDATE_PARAM_T connectionParameters = 
@@ -20,6 +20,25 @@ CYBLE_GAP_CONN_UPDATE_PARAM_T connectionParameters =
     0,                  // Slave latency - 1 
     500                 // Supervision timeout - 500 x 10 = 5000 ms 
 };
+
+
+void dataNotify(int32 data)
+{
+    CYBLE_GATTS_HANDLE_VALUE_NTF_T notificationHandle;
+    if (startDataNotification & NOTIFY_BIT_MASK)
+    {
+        //DBG_PRINTF("BTN Notify Val: %d \r\n", button);
+        notificationHandle.attrHandle = CYBLE_DEVICE_DATA_DATA_CHAR_HANDLE;
+        notificationHandle.value.val = (uint8_t*)&data;
+        notificationHandle.value.len = sizeof(int32_t);
+        CYBLE_API_RESULT_T result = CyBle_GattsNotification(cyBle_connHandle, &notificationHandle);
+        if (result != CYBLE_ERROR_OK)
+        {
+            DBG_PRINTF("Data Notify Error!\r\n");
+        }
+        updateBleData(CYBLE_DEVICE_DATA_DATA_CHAR_HANDLE, (uint8_t*)&data, sizeof(data));
+    }
+}
 
 void writeDeviceInfoToGATT(void)
 {
@@ -251,6 +270,32 @@ void appCallBack(uint32 event, void* eventParam)
             wrReqParam = (CYBLE_GATTS_WRITE_REQ_PARAM_T *) eventParam;
             switch (wrReqParam->handleValPair.attrHandle)
             {
+                case CYBLE_DEVICE_DATA_DATA_CLIENT_CHARACTERISTIC_CONFIGURATION_DESC_HANDLE:
+                    if(FALSE ==
+                        (wrReqParam->handleValPair.value.val
+                            [CYBLE_DEVICE_DATA_DATA_CLIENT_CHARACTERISTIC_CONFIGURATION_DESC_INDEX] &
+                        (~CCCD_VALID_BIT_MASK)))
+                    {
+                        startDataNotification =
+                        wrReqParam->handleValPair.value.val
+                        [CYBLE_DEVICE_DATA_DATA_CLIENT_CHARACTERISTIC_CONFIGURATION_DESC_INDEX];
+                        CyBle_GattsWriteAttributeValue(&wrReqParam->handleValPair,
+                        FALSE,
+                        &cyBle_connHandle,
+                        CYBLE_GATT_DB_PEER_INITIATED);
+                        DBG_PRINTF("Hearbeat CCCD: Notification Val - %d\r\n", startDataNotification);
+                    }
+                    else
+                    {
+                        CYBLE_GATTS_ERR_PARAM_T err_param;
+                        err_param.opcode = CYBLE_GATT_WRITE_REQ;
+                        err_param.attrHandle = wrReqParam->handleValPair.attrHandle;
+                        err_param.errorCode = ERR_INVALID_PDU;
+                        (void)CyBle_GattsErrorRsp(cyBle_connHandle, &err_param);
+                        return;
+                    }
+                    CyBle_GattsWriteRsp(cyBle_connHandle);
+                    break;  
                 default:
                     //Add a case to handle each write characteristic 
                 break;

@@ -26,7 +26,7 @@ typedef struct
 } onAmperoCfg_t;
 
 void offsetCalibration(onChannel_t ch);
-void amperoExperiment(onAmperoCfg_t cfg);
+void amperoExperiment(void);
 
 #endif /* ON_H */ 
 /* [] END OF FILE */

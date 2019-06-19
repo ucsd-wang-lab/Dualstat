@@ -136,7 +136,7 @@ void processCommandMsg(void)
     else if (RB.cmd == cmd_R)//command 'R' received..
     {
         PB.R = RB.valstr[0];
-        adcPwrDown(); //TODO: remove, used for testing
+        adcReset();
         if (PB.R == ASCII_0)
         {
             DBG_PRINTF("R0\n\rTEST>  Reference OFF\r\n");//echo command   
@@ -278,8 +278,8 @@ void processCommandMsg(void)
             
         }
         DBG_PRINTF("TEST> AMPERO - POT[%c]: %d mV\r\n", ch, val);
+        POT_A_SHDN_Write(GPIO_LOW); //disable potentiostat
         dacSetRef(REF_ON); //turn on the 1.25V reference
-        adcReset();
         switch (ch)
         {
             case ASCII_A:
@@ -298,6 +298,7 @@ void processCommandMsg(void)
             break;
         }
         CyDelay(1000);  //delay for voltage to stabilize
+        POT_A_SHDN_Write(GPIO_HIGH); //enable potentiostat
         for (uint16_t i=0;i<1200;i++)
         {
             adcStartConv();
@@ -312,11 +313,11 @@ void processCommandMsg(void)
         switch (ch) //RETURN TO 0V, 100 accounts for offset
         {
             case ASCII_A:
-                dacSet(300, DAC_CH_A, FALSE);
+                dacSet(150, DAC_CH_A, FALSE);
                 adcConfigChanGain(ADC_CH_A, ADC_G1, PGA_DIS);
             break;
             case ASCII_B:
-                dacSet(300, DAC_CH_B, FALSE);
+                dacSet(150, DAC_CH_B, FALSE);
                 adcConfigChanGain(ADC_CH_B, ADC_G1, PGA_DIS);
             break;
             case ASCII_F:
