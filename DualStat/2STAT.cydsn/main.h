@@ -27,14 +27,14 @@
     
 #define FV_MAJOR            0
 #define FV_MINOR            0
-#define FV_POINT            1
+#define FV_POINT            2
 #define FIRMWARE_DATE       __DATE__
 #define COMPILE_TIME        __TIME__
 
     
 
 /* Options */    
-#define SERIAL_CTRL         ENABLED 
+#define SERIAL_CTRL         DISABLED 
 #define DEBUG_UART_ENABLED  ENABLED
     
 /* UART Functions*/    

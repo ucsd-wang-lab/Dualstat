@@ -3,11 +3,11 @@
 <!--This file is machine generated and read. It is not intended to be edited by hand.-->
 <!--Due to this, there is no schema for this file.-->
 <CyGuid_2867d519-54d2-4c01-9830-c51cb08bc3dd type_name="CyDesigner.Common.ProjMgmt.Model.CyPrjMgmtWorkspaceSerialize" version="5" xml_contents_version="3" name="DualStat" persistent="DualStat.cywrk" platform="NOT_USED">
-<current_project name=".\Design01.cydsn\Design01.cyprj" />
+<current_project name=".\2STAT.cydsn\2STAT.cyprj" />
 <wrkspc_folders />
 <files />
 <projects>
-<v>.\Design01.cydsn\Design01.cyprj</v>
+<v>.\2STAT.cydsn\2STAT.cyprj</v>
 </projects>
 <workspace_id v="1013f581-81c8-4c2d-9192-2370e82acbde" />
 <WriteAppVersionLastSavedWith v="4.2.0.641" />

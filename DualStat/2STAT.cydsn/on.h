@@ -22,11 +22,14 @@ typedef struct
     uint8_t posNum;
     uint16_t potential; //in mV
     uint16_t sampleCnt;
-    uint16_t sampleRate;
+    uint16_t period;
+    uint16_t delay;
 } onAmperoCfg_t;
 
 void offsetCalibration(onChannel_t ch);
 void amperoExperiment(void);
+void stopAll(void);
+void amperoExperimentStart(onAmperoCfg_t cfg);
 
 #endif /* ON_H */ 
 /* [] END OF FILE */

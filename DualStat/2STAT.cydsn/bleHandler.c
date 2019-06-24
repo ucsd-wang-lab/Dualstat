@@ -1,5 +1,6 @@
 #include "main.h"
 #include "bleHandler.h"
+#include "on.h"
 
 void appCallBack(uint32 event, void* eventParam);
 void writeDeviceInfoToGATT(void);
@@ -12,6 +13,8 @@ uint8_t bleHibernateFlag = FALSE;
 uint8_t mcuHibernateFlag = FALSE;
 uint8 startDataNotification;
 uint8 deviceConnected = FALSE;
+
+onAmperoCfg_t amperoData;
 
 CYBLE_GAP_CONN_UPDATE_PARAM_T connectionParameters = 
 {
@@ -28,7 +31,7 @@ void dataNotify(int32 data)
     if (startDataNotification & NOTIFY_BIT_MASK)
     {
         //DBG_PRINTF("BTN Notify Val: %d \r\n", button);
-        notificationHandle.attrHandle = CYBLE_DEVICE_DATA_DATA_CHAR_HANDLE;
+        notificationHandle.attrHandle = CYBLE_MEASUREMENTS_DATA_CHAR_HANDLE;
         notificationHandle.value.val = (uint8_t*)&data;
         notificationHandle.value.len = sizeof(int32_t);
         CYBLE_API_RESULT_T result = CyBle_GattsNotification(cyBle_connHandle, &notificationHandle);
@@ -36,7 +39,7 @@ void dataNotify(int32 data)
         {
             DBG_PRINTF("Data Notify Error!\r\n");
         }
-        updateBleData(CYBLE_DEVICE_DATA_DATA_CHAR_HANDLE, (uint8_t*)&data, sizeof(data));
+        updateBleData(CYBLE_MEASUREMENTS_DATA_CHAR_HANDLE, (uint8_t*)&data, sizeof(data));
     }
 }
 
@@ -252,6 +255,7 @@ void appCallBack(uint32 event, void* eventParam)
             break;
         case CYBLE_EVT_GAP_DEVICE_DISCONNECTED:
             DBG_PRINTF("CYBLE_EVT_GAP_DEVICE_DISCONNECTED \r\n");
+            bleStartAdvertising();
             break;
             
         /**********************************************************
@@ -270,20 +274,84 @@ void appCallBack(uint32 event, void* eventParam)
             wrReqParam = (CYBLE_GATTS_WRITE_REQ_PARAM_T *) eventParam;
             switch (wrReqParam->handleValPair.attrHandle)
             {
-                case CYBLE_DEVICE_DATA_DATA_CLIENT_CHARACTERISTIC_CONFIGURATION_DESC_HANDLE:
+                //Ampero Config
+                case CYBLE_AMPERO_CONFIG_COUNTS_CHAR_HANDLE:
+                    amperoData.sampleCnt = *wrReqParam->handleValPair.value.val;
+                    CyBle_GattsWriteRsp(cyBle_connHandle);
+                    DBG_PRINTF("(BLE) AMP_CFG Count: %d\r\n", amperoData.sampleCnt);
+                    break;
+                case CYBLE_AMPERO_CONFIG_POTENTIAL_CHAR_HANDLE:
+                    amperoData.potential = *wrReqParam->handleValPair.value.val;
+                    CyBle_GattsWriteRsp(cyBle_connHandle);
+                    DBG_PRINTF("(BLE) AMP_CFG Potential: %d\r\n", amperoData.potential);
+                    break;
+                case CYBLE_AMPERO_CONFIG_DELAY_CHAR_HANDLE:
+                    amperoData.delay = (*wrReqParam->handleValPair.value.val) * 4.096;  //convert to ticks from ms
+                    CyBle_GattsWriteRsp(cyBle_connHandle);
+                    DBG_PRINTF("(BLE) AMP_CFG Delay: %d\r\n", amperoData.delay);
+                    break;       
+                case CYBLE_AMPERO_CONFIG_PERIOD_CHAR_HANDLE:
+                    amperoData.period = (*wrReqParam->handleValPair.value.val) * 4.096; //convert to ticks from ms
+                    CyBle_GattsWriteRsp(cyBle_connHandle);
+                    DBG_PRINTF("(BLE) AMP_CFG Period: %d\r\n", amperoData.period);
+                    break; 
+                case CYBLE_AMPERO_CONFIG_POTENTIAL_SIGN_CHAR_HANDLE:
+                    amperoData.posNum = *wrReqParam->handleValPair.value.val;
+                    CyBle_GattsWriteRsp(cyBle_connHandle);
+                    DBG_PRINTF("(BLE) AMP_CFG Potential Sign: %d\r\n", amperoData.posNum);
+                    break;
+                case CYBLE_AMPERO_CONFIG_CHANNEL_CHAR_HANDLE:
+                    amperoData.channel = *wrReqParam->handleValPair.value.val;
+                    CyBle_GattsWriteRsp(cyBle_connHandle);
+                    DBG_PRINTF("(BLE) AMP_CFG Channel: %d\r\n", amperoData.channel);
+                    break;         
+                case CYBLE_AMPERO_CONFIG_DEFAULT_CHAR_HANDLE:
+                    CyBle_GattsWriteRsp(cyBle_connHandle);
+                    uint8_t tmp = *wrReqParam->handleValPair.value.val;
+                    DBG_PRINTF("(BLE) AMP_CFG Default: %d\r\n", tmp);
+                    amperoData.channel = ON_CH_A;
+                    amperoData.delay = 0;
+                    amperoData.period = 4096;
+                    amperoData.posNum = FALSE;
+                    amperoData.potential = 200;
+                    amperoData.sampleCnt = 60;
+                    break;                    
+                //Start Measurement
+                case CYBLE_MEASUREMENTS_MEASUREMENT_CONTROL_CHAR_HANDLE:
+                    CyBle_GattsWriteRsp(cyBle_connHandle);
+                    uint8_t trigger = *wrReqParam->handleValPair.value.val;
+                    if (trigger == 0)
+                    {
+                        //stop
+                        stopAll();
+                    }
+                    else if (trigger == 1)
+                    {
+                        //start ampero
+                        amperoExperimentStart(amperoData);
+                    }
+                    else
+                    {
+                        //unsupported trigger command
+                        DBG_PRINTF("(BLE) Unsupported MEAS_CTRL Trigger: %d\r\n", trigger);
+                    }
+                    DBG_PRINTF("(BLE) MEAS_CTRL Trigger: %d\r\n", trigger);
+                    break;
+                //Data Notification
+                case CYBLE_MEASUREMENTS_DATA_CLIENT_CHARACTERISTIC_CONFIGURATION_DESC_HANDLE:
                     if(FALSE ==
                         (wrReqParam->handleValPair.value.val
-                            [CYBLE_DEVICE_DATA_DATA_CLIENT_CHARACTERISTIC_CONFIGURATION_DESC_INDEX] &
+                            [CYBLE_MEASUREMENTS_DATA_CLIENT_CHARACTERISTIC_CONFIGURATION_DESC_INDEX] &
                         (~CCCD_VALID_BIT_MASK)))
                     {
                         startDataNotification =
                         wrReqParam->handleValPair.value.val
-                        [CYBLE_DEVICE_DATA_DATA_CLIENT_CHARACTERISTIC_CONFIGURATION_DESC_INDEX];
+                        [CYBLE_MEASUREMENTS_DATA_CLIENT_CHARACTERISTIC_CONFIGURATION_DESC_INDEX];
                         CyBle_GattsWriteAttributeValue(&wrReqParam->handleValPair,
                         FALSE,
                         &cyBle_connHandle,
                         CYBLE_GATT_DB_PEER_INITIATED);
-                        DBG_PRINTF("Hearbeat CCCD: Notification Val - %d\r\n", startDataNotification);
+                        DBG_PRINTF("Data CCCD: Notification Val - %d\r\n", startDataNotification);
                     }
                     else
                     {
